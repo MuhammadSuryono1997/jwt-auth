@@ -1,4 +1,4 @@
-module JWT-auth
+module github.com/MuhammadSuryono1997/jwt-auth
 
 go 1.14
 

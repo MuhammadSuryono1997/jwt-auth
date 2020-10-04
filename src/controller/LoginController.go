@@ -1,8 +1,8 @@
 package controller
 
 import (
-	"JWT-auth/src/dto"
-	"JWT-auth/src/service"
+	"github.com/MuhammadSuryono1997/jwt-auth/src/dto"
+	"github.com/MuhammadSuryono1997/jwt-auth/src/service"
 
 	"github.com/gin-gonic/gin"
 )

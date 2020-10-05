@@ -1,12 +1,46 @@
 package service
 
 import (
+	"crypto/rsa"
 	"fmt"
+	"io/ioutil"
+	"log"
 	"os"
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
 )
+
+const (
+	privKeyPath = "keys/app.rsa"     // openssl genrsa -out app.rsa keysize
+	pubKeyPath  = "keys/app.rsa.pub" // openssl rsa -in app.rsa -pubout > app.rsa.pub
+)
+
+var (
+	verifyKey *rsa.PublicKey
+	signKey   *rsa.PrivateKey
+)
+
+func init_key() {
+	signBytes, err := ioutil.ReadFile(privKeyPath)
+	fatal(err)
+
+	signKey, err = jwt.ParseRSAPrivateKeyFromPEM(signBytes)
+	fatal(err)
+
+	verifyBytes, err := ioutil.ReadFile(pubKeyPath)
+	fatal(err)
+
+	verifyKey, err = jwt.ParseRSAPublicKeyFromPEM(verifyBytes)
+	fatal(err)
+
+}
+
+func fatal(err error) {
+	if err != nil {
+		log.Fatal(err)
+	}
+}
 
 //jwt service
 type JWTService interface {
@@ -41,6 +75,7 @@ func getSecretKey() string {
 }
 
 func (service *jwtServices) GenerateToken(email string, isUser bool) string {
+	init_key()
 	claims := &authCustomClaims{
 		email,
 		isUser,
@@ -50,10 +85,10 @@ func (service *jwtServices) GenerateToken(email string, isUser bool) string {
 			IssuedAt:  time.Now().Unix(),
 		},
 	}
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	token := jwt.NewWithClaims(jwt.GetSigningMethod("RS256"), claims)
 
 	//encoded string
-	t, err := token.SignedString([]byte(service.secretKey))
+	t, err := token.SignedString(signKey)
 	if err != nil {
 		panic(err)
 	}
@@ -66,7 +101,7 @@ func (service *jwtServices) ValidateToken(encodedToken string) (*jwt.Token, erro
 			return nil, fmt.Errorf("Invalid token", token.Header["alg"])
 
 		}
-		return []byte(service.secretKey), nil
+		return verifyKey, nil
 	})
 
 }
